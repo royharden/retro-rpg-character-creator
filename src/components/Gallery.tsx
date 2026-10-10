@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { supabaseConfigured } from '@/lib/supabaseClient';
 import type { GalleryCharacter, FullCharacter } from '@/lib/types';
 import { SpriteCanvas } from './SpriteCanvas';
 import { sfx } from '@/lib/sound';
@@ -16,6 +17,11 @@ export function Gallery({ onBack }: GalleryProps) {
   const [selected, setSelected] = useState<FullCharacter | null>(null);
 
   const loadGallery = useCallback(async () => {
+    if (!supabase) {
+      setError('Supabase is not configured');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from('characters')
@@ -88,6 +94,13 @@ export function Gallery({ onBack }: GalleryProps) {
 
         {loading && (
           <div className="font-pixel text-[10px] text-cream-600 animate-pulse">LOADING...</div>
+        )}
+
+        {!loading && !supabaseConfigured && (
+          <div className="pixel-panel pixel-border-crimson text-center py-8">
+            <div className="font-pixel text-[10px] text-crimson-400 mb-2">SUPABASE NOT CONFIGURED</div>
+            <div className="font-terminal text-base text-cream-600">Gallery requires Supabase. The app works in Replay + Mock mode without it.</div>
+          </div>
         )}
 
         {error && (

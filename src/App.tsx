@@ -9,7 +9,7 @@ import { ToastContainer } from '@/components/Toast';
 import { DiceTray } from '@/components/DiceTray';
 import { SoundToggle, CRTToggle } from '@/components/SoundToggle';
 import { sfx } from '@/lib/sound';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, supabaseConfigured } from '@/lib/supabaseClient';
 import { buildSheet } from '@/lib/characterMath';
 import { buildJevQuestions } from '@/lib/jevQuestions';
 import { generateMockLore } from '@/lib/mockLore';
@@ -83,6 +83,9 @@ export default function App() {
   // The actual mode is determined when we call the edge function
 
   const callJevBuild = useCallback(async (description: string, vibe: string | null): Promise<{ answers: JevAnswers; mode: JevMode; model?: string; usage?: { input_tokens: number; output_tokens: number }; latencyMs?: number; costUsd?: number }> => {
+    if (!supabase) {
+      return { answers: {} as JevAnswers, mode: 'replay' as JevMode };
+    }
     try {
       const { data, error } = await supabase.functions.invoke('jev-build', {
         body: { description, vibe },
@@ -120,6 +123,9 @@ export default function App() {
   }, [addToast]);
 
   const callWriteLore = useCallback(async (sheet: CharacterSheet, description: string, tone: string): Promise<{ lore: Lore; mode: LlmMode; latencyMs?: number }> => {
+    if (!supabase) {
+      return { lore: generateMockLore(sheet), mode: 'mock' as LlmMode };
+    }
     try {
       const { data, error } = await supabase.functions.invoke('write-lore', {
         body: { sheet: { ...sheet, description }, tone },
@@ -335,6 +341,10 @@ export default function App() {
 
   const handleAddToGallery = useCallback(async () => {
     if (!character) return;
+    if (!supabase) {
+      addToast('error', 'Supabase is not configured. Gallery is unavailable.');
+      return;
+    }
     sfx.click();
     try {
       const { error } = await supabase.from('characters').insert({
@@ -371,6 +381,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-navy-900">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {!supabaseConfigured && (
+        <div className="pixel-panel pixel-border-crimson mx-4 mt-4 max-w-4xl mx-auto text-center py-3">
+          <span className="font-pixel text-[8px] text-crimson-400">SUPABASE NOT CONFIGURED - RUNNING IN OFFLINE MODE (REPLAY + MOCK)</span>
+        </div>
+      )}
 
       {/* Top nav bar (not on title screen) */}
       {view !== 'title' && (

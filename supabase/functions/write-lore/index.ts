@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const DAILY_CAP = 200;
+const MAX_BODY_BYTES = 8192;
 
 const LoreSchema = z.object({
   backstory: z.string().min(80).max(300),
@@ -21,6 +22,22 @@ function jsonResponse(data: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+class DailyLimitError extends Error {
+  constructor() {
+    super('daily_limit');
+  }
+}
+
+async function checkCap(supabaseClient: ReturnType<typeof createClient>): Promise<void> {
+  const { data, error } = await supabaseClient.rpc('increment_usage', { fn: 'write-lore' });
+  if (error || typeof data !== 'number') {
+    throw new Error('cap_check_failed');
+  }
+  if (data > DAILY_CAP) {
+    throw new DailyLimitError();
+  }
 }
 
 const SYSTEM_PROMPT = `You are a creative writer for a retro RPG character sheet generator.
@@ -76,25 +93,44 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'missing_secret', message: 'OPENAI_API_KEY is not configured' }, 503);
     }
 
-    const { sheet, tone } = await req.json();
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return jsonResponse({ error: 'cap_check_failed', message: 'Supabase credentials unavailable' }, 503);
+    }
+
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+      return jsonResponse({ error: 'payload_too_large', message: 'Request body exceeds 8 KB limit' }, 413);
+    }
+
+    const rawBody = await req.text();
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return jsonResponse({ error: 'payload_too_large', message: 'Request body exceeds 8 KB limit' }, 413);
+    }
+
+    const { sheet, tone } = JSON.parse(rawBody);
 
     if (!sheet || !sheet.classId) {
       return jsonResponse({ error: 'invalid_input', message: 'Sheet is required' }, 422);
     }
 
-    // Daily cap check (fail closed)
-    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const { data, error } = await supabase.rpc('increment_usage', { fn: 'write-lore' });
-      if (error || typeof data !== 'number') {
-        return jsonResponse({ error: 'cap_check_failed', message: 'Usage counter unavailable' }, 503);
-      }
-      if (data > DAILY_CAP) {
-        return jsonResponse({ error: 'daily_limit' }, 429);
-      }
+    // Validate and trim inputs
+    const trimmedTone = (tone || 'heroic').slice(0, 50);
+    const trimmedClassName = (sheet.className || '').slice(0, 40);
+    const trimmedDescription = (sheet.description || '').slice(0, 1200);
+
+    if (!Array.isArray(sheet.stats) || sheet.stats.length > 6) {
+      return jsonResponse({ error: 'invalid_input', message: 'stats must be an array of at most 6 items' }, 422);
     }
 
-    const userPrompt = buildUserPrompt(sheet, tone || 'heroic');
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const sanitizedSheet = {
+      ...sheet,
+      className: trimmedClassName,
+      description: trimmedDescription,
+    };
+
+    const userPrompt = buildUserPrompt(sanitizedSheet, trimmedTone);
 
     const body = {
       model: OPENAI_MODEL,
@@ -108,6 +144,8 @@ Deno.serve(async (req: Request) => {
     let parsed: z.infer<typeof LoreSchema> | null = null;
 
     for (let attempt = 0; attempt < 2; attempt++) {
+      await checkCap(supabase);
+
       const resp = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -150,6 +188,12 @@ Deno.serve(async (req: Request) => {
       mode: 'live',
     });
   } catch (err) {
+    if (err instanceof DailyLimitError) {
+      return jsonResponse({ error: 'daily_limit' }, 429);
+    }
+    if ((err as Error).message === 'cap_check_failed') {
+      return jsonResponse({ error: 'cap_check_failed', message: 'Usage counter unavailable' }, 503);
+    }
     return jsonResponse({ error: 'internal_error', message: (err as Error).message }, 500);
   }
 });
