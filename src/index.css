@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pixel-border: 4px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #0a0e27;
+  color: #fef3c7;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1.4;
+}
+
+/* Pixel border with stepped corners */
+.pixel-border {
+  border: var(--pixel-border) solid #fef3c7;
+  box-shadow:
+    0 0 0 var(--pixel-border) #0a0e27,
+    0 0 0 calc(var(--pixel-border) * 2) #fef3c7;
+  position: relative;
+}
+
+.pixel-border-gold {
+  border: var(--pixel-border) solid #fbbf24;
+  box-shadow:
+    0 0 0 var(--pixel-border) #0a0e27,
+    0 0 0 calc(var(--pixel-border) * 2) #fbbf24;
+}
+
+.pixel-border-teal {
+  border: var(--pixel-border) solid #14b8a6;
+  box-shadow:
+    0 0 0 var(--pixel-border) #0a0e27,
+    0 0 0 calc(var(--pixel-border) * 2) #14b8a6;
+}
+
+.pixel-border-crimson {
+  border: var(--pixel-border) solid #dc2626;
+  box-shadow:
+    0 0 0 var(--pixel-border) #0a0e27,
+    0 0 0 calc(var(--pixel-border) * 2) #dc2626;
+}
+
+/* Stepped corner clip */
+.pixel-corner {
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0,
+    calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+  );
+}
+
+/* Pixel button */
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  padding: 12px 20px;
+  background: #0a0e27;
+  color: #fef3c7;
+  border: 3px solid #fef3c7;
+  cursor: pointer;
+  transition: none;
+  image-rendering: pixelated;
+  position: relative;
+}
+
+.pixel-btn:hover:not(:disabled) {
+  background: #fef3c7;
+  color: #0a0e27;
+}
+
+.pixel-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+}
+
+.pixel-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pixel-btn-gold {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+.pixel-btn-gold:hover:not(:disabled) {
+  background: #fbbf24;
+  color: #0a0e27;
+}
+
+.pixel-btn-teal {
+  border-color: #14b8a6;
+  color: #14b8a6;
+}
+.pixel-btn-teal:hover:not(:disabled) {
+  background: #14b8a6;
+  color: #0a0e27;
+}
+
+.pixel-btn-crimson {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+.pixel-btn-crimson:hover:not(:disabled) {
+  background: #dc2626;
+  color: #fef3c7;
+}
+
+.pixel-btn-grass {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+.pixel-btn-grass:hover:not(:disabled) {
+  background: #22c55e;
+  color: #0a0e27;
+}
+
+/* Pixel panel */
+.pixel-panel {
+  background: #131637;
+  border: 3px solid #fef3c7;
+  padding: 16px;
+  position: relative;
+}
+
+.pixel-panel-gold {
+  border-color: #fbbf24;
+}
+
+.pixel-panel-teal {
+  border-color: #14b8a6;
+}
+
+/* CRT scanline overlay */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.crt-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
+
+/* Pixelated image rendering for sprites */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0e27;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #353d7a;
+  border: 2px solid #0a0e27;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fef3c7;
+}
+
+/* Text selection */
+::selection {
+  background: #fbbf24;
+  color: #0a0e27;
+}
+
+/* Segmented stat bar blocks */
+.stat-segment {
+  width: 8px;
+  height: 16px;
+  display: inline-block;
+  margin-right: 2px;
+  image-rendering: pixelated;
+}
+
+/* Dice tray */
+.dice-face {
+  width: 32px;
+  height: 32px;
+  background: #fef3c7;
+  color: #0a0e27;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  border: 2px solid #0a0e27;
+  box-shadow: 2px 2px 0 #0a0e27;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Tooltip for Jev distribution hover */
+.jev-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  white-space: nowrap;
+}

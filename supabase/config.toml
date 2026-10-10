@@ -1,0 +1,7 @@
+project_id = "0ec90b57d6e95fcbda19832f"
+
+[functions.jev-build]
+verify_jwt = true
+
+[functions.write-lore]
+verify_jwt = true
